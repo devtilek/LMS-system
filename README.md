@@ -144,7 +144,7 @@ POST /lessons
 
 ---
 
-## 🗂 Project Structure
+##  Project Structure
 
 ```
 src/main/java/practice/lms_students/
