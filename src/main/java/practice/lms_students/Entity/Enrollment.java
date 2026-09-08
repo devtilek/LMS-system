@@ -1,13 +1,16 @@
 package practice.lms_students.Entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
-@Table(name = "t_enrollment")
+@Table(
+        name = "t_enrollment",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_enrollment_student_course",
+                columnNames = {"student_id", "course_id"}
+        )
+)
 @Getter
 @Setter
 @AllArgsConstructor
@@ -15,14 +18,13 @@ import lombok.Setter;
 public class Enrollment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "student_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "course_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 }
