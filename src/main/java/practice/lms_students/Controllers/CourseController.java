@@ -1,6 +1,9 @@
 package practice.lms_students.Controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import practice.lms_students.DTO.CourseDTO;
 import practice.lms_students.Service.CourseService;
@@ -14,22 +17,25 @@ public class CourseController {
     private final CourseService courseService;
 
     @PostMapping
-    public CourseDTO createCourse(@RequestBody CourseDTO courseDTO){
-        return courseService.createCourse(courseDTO);
+    @ResponseStatus(HttpStatus.CREATED)
+    public CourseDTO createCourse(Authentication authentication,
+                                  @Valid @RequestBody CourseDTO courseDTO) {
+        return courseService.createCourse(authentication, courseDTO);
     }
 
-    @GetMapping()
-    public List<CourseDTO> getAll(){
+    @GetMapping
+    public List<CourseDTO> getAll() {
         return courseService.getAllCourses();
     }
 
     @GetMapping("/{id}")
-    public CourseDTO getCourseById(@PathVariable Long id){
+    public CourseDTO getCourseById(@PathVariable Long id) {
         return courseService.getCourseById(id);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteCourseById(@PathVariable Long id){
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCourseById(@PathVariable Long id) {
         courseService.delete(id);
     }
 }
