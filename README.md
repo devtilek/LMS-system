@@ -1,128 +1,182 @@
-#  LMS System
+# LMS System
 
-A simple backend REST API for managing online courses, built with Spring Boot.
-This is a personal pet-project to practice Java, Spring Boot, Spring Security, and REST API design.
+A backend REST API for managing an online learning platform. The project demonstrates layered architecture, role-based access control, DTO mapping, validation, and PostgreSQL persistence with Spring Boot.
 
----
+## Features
+
+- Student and teacher roles
+- Secure registration with BCrypt password hashing
+- HTTP Basic authentication
+- Role-based authorization with Spring Security
+- Course management for teachers
+- Lesson management for teachers
+- Student course enrollment
+- Protection against duplicate enrollments
+- DTO ↔ Entity mapping with MapStruct
+- Centralized REST exception handling
+- Request validation with Jakarta Validation
+- PostgreSQL persistence with Spring Data JPA
+- Environment-based database configuration
 
 ## Tech Stack
 
 | Technology | Purpose |
 |---|---|
 | Java 17 | Main language |
-| Spring Boot 3.2.5 | Framework |
-| Spring Security | Authentication & Authorization |
-| Spring Data JPA | Database access |
+| Spring Boot 3.2.5 | Application framework |
+| Spring Security | Authentication and authorization |
+| Spring Data JPA / Hibernate | Persistence |
 | PostgreSQL | Database |
 | MapStruct | DTO ↔ Entity mapping |
-| Lombok | Reducing boilerplate code |
+| Lombok | Boilerplate reduction |
 | Gradle | Build tool |
+| Jakarta Validation | Request validation |
 
----
+## Architecture
 
-## How to Run
+```text
+Client
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+PostgreSQL
 
-### 1. Requirements
+Entity ↔ Mapper ↔ DTO
+Security → Authentication / Authorization
+Exception → GlobalExceptionHandler
+```
+
+Project structure:
+
+```text
+src/main/java/practice/lms_students/
+├── Controllers/
+├── DTO/
+├── Entity/
+├── Exception/
+├── Mapper/
+├── Repository/
+├── Security/
+└── Service/
+```
+
+## Getting Started
+
+### Requirements
+
 - Java 17+
-- PostgreSQL running locally
-- Gradle (or use `./gradlew`)
+- PostgreSQL 14+
+- Git
 
-### 2. Set up the database
+### Database
 
-Create a PostgreSQL database:
+Create the database:
+
 ```sql
 CREATE DATABASE LMS_system;
 ```
 
-### 3. Configure the app
+### Environment variables
 
-Open `src/main/resources/application.properties` and set your DB credentials:
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/LMS_system
-spring.datasource.username=postgres
-spring.datasource.password=your_password
+Copy `.env.example` and configure your local environment. The application supports:
+
+```text
+DB_URL=jdbc:postgresql://localhost:5432/LMS_system
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
 ```
 
-### 4. Run the app
+Do not commit real credentials to GitHub.
+
+### Run
+
+Linux/macOS:
 
 ```bash
 ./gradlew bootRun
 ```
 
-The server starts at `http://localhost:8080`
+Windows:
 
----
+```bash
+gradlew.bat bootRun
+```
 
-## Authentication
+The API runs on `http://localhost:8080`.
 
-This API uses **HTTP Basic Auth**.
+## Authentication and Authorization
 
-First register a user, then include credentials in every request.
+The API uses HTTP Basic authentication.
 
-There are two roles:
-- `ROLE_STUDENT` — can enroll in courses, view lessons
-- `ROLE_TEACHER` — can create and manage courses
+A public registration endpoint creates **STUDENT** accounts. The role supplied by a client during registration is intentionally ignored so that an unauthenticated user cannot create a teacher account.
 
----
+Teacher accounts should be provisioned separately by an administrator/database seed until a dedicated admin API is introduced.
 
-## API Endpoints
+### Permissions
 
-### Users
+| Operation | Student | Teacher |
+|---|:---:|:---:|
+| Register | ✓ | ✓ |
+| View courses | ✓ | ✓ |
+| Create/delete courses | — | ✓ |
+| View lessons | ✓ | ✓ |
+| Create/delete lessons | — | ✓ |
+| Enroll in a course | ✓ | — |
+| View own enrollments | ✓ | — |
+| View course enrollments | — | ✓ |
 
-| Method | URL | Description | Auth required |
-|---|---|---|---|
-| POST | `/users/register` | Register a new user | No |
-| GET | `/users` | Get all users | Yes |
-| GET | `/users/{id}` | Get user by ID | Yes |
-| DELETE | `/users/{id}` | Delete user | Yes |
+## API
 
-**Register example:**
-```json
+### Register
+
+```http
 POST /users/register
+Content-Type: application/json
+```
+
+```json
 {
   "fullName": "John Doe",
   "email": "john@example.com",
-  "password": "secret123",
-  "role": "ROLE_STUDENT"
+  "password": "secret123"
 }
 ```
-
----
 
 ### Courses
 
-> Requires `ROLE_TEACHER`
+```text
+GET    /courses
+GET    /courses/{id}
+POST   /courses              # TEACHER
+DELETE /courses/{id}         # TEACHER
+```
 
-| Method | URL | Description |
-|---|---|---|
-| POST | `/courses` | Create a course |
-| GET | `/courses` | Get all courses |
-| GET | `/courses/{id}` | Get course by ID |
-| DELETE | `/courses/{id}` | Delete a course |
+Create course:
 
-**Create course example:**
 ```json
-POST /courses
 {
   "name": "Java Basics",
-  "description": "Learn Java from scratch",
-  "teacherId": 1
+  "description": "Learn Java from scratch"
 }
 ```
 
----
+The teacher is taken from the authenticated user rather than from a client-supplied ID.
 
 ### Lessons
 
-| Method | URL | Description |
-|---|---|---|
-| POST | `/lessons` | Create a lesson |
-| GET | `/lessons/course/{courseId}` | Get lessons by course |
-| DELETE | `/lessons/{id}` | Delete a lesson |
+```text
+GET    /lessons/course/{courseId}
+POST   /lessons               # TEACHER
+DELETE /lessons/{id}          # TEACHER
+```
 
-**Create lesson example:**
+Create lesson:
+
 ```json
-POST /lessons
 {
   "title": "Variables and Types",
   "content": "In Java, variables must have a type...",
@@ -130,46 +184,44 @@ POST /lessons
 }
 ```
 
----
-
 ### Enrollments
 
-> Only `ROLE_STUDENT` can enroll
-
-| Method | URL | Description |
-|---|---|---|
-| POST | `/enrollments?studentId=1&courseId=1` | Enroll student in course |
-| GET | `/enrollments/student/{studentId}` | Get courses of a student |
-| GET | `/enrollments/course/{courseId}` | Get students in a course |
-
----
-
-##  Project Structure
-
-```
-src/main/java/practice/lms_students/
-├── Controllers/       — HTTP endpoints (REST API)
-├── DTO/               — Data Transfer Objects (what client sends/receives)
-├── Entity/            — Database models (JPA)
-├── Mapper/            — Converts Entity ↔ DTO (MapStruct)
-├── Repository/        — Database queries (Spring Data JPA)
-├── Security/          — Authentication & Authorization (Spring Security)
-└── Service/           — Business logic
+```text
+POST /enrollments?courseId=1
+GET  /enrollments/student/{studentId}
+GET  /enrollments/course/{courseId}   # TEACHER
 ```
 
-### How a request flows:
+The student ID is derived from the authenticated account during enrollment. A student cannot enroll another user, and duplicate student/course combinations are rejected.
 
-```
-Client
-  ↓
-Controller      (receives HTTP request)
-  ↓
-Service         (checks business rules)
-  ↓
-Repository      (reads/writes to DB)
-  ↓
-Mapper + DTO    (formats the response)
-  ↓
-Client          (gets clean JSON back)
+## Error Responses
+
+The API returns consistent JSON errors for common failures such as validation errors, missing resources, and duplicate resources.
+
+Example:
+
+```json
+{
+  "timestamp": "2026-09-08T12:00:00Z",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Course not found"
+}
 ```
 
+## Development Notes
+
+- `spring.jpa.open-in-view=false` is enabled to avoid accidental database access from the web layer.
+- Relationships are lazy-loaded where appropriate.
+- Lesson and enrollment filtering is performed by PostgreSQL through repository queries instead of loading every record into memory.
+- Enrollment has a database-level unique constraint on `(student_id, course_id)`.
+
+## Roadmap
+
+- JWT authentication with refresh tokens
+- Admin role and teacher management
+- Pagination and sorting
+- OpenAPI / Swagger documentation
+- Unit and integration tests
+- Docker Compose for PostgreSQL and the application
+- CI pipeline with GitHub Actions
