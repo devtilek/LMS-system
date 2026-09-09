@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import practice.lms_students.DTO.CourseDTO;
 import practice.lms_students.Service.CourseService;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,8 +24,10 @@ public class CourseController {
     }
 
     @GetMapping
-    public List<CourseDTO> getAll() {
-        return courseService.getAllCourses();
+    public Page<CourseDTO> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return courseService.getAllCourses(page, size);
     }
 
     @GetMapping("/{id}")
