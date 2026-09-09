@@ -12,6 +12,7 @@ A backend REST API for managing an online learning platform. The project demonst
 - Teacher-owned lesson management
 - Student course enrollment
 - Protection against duplicate enrollments
+- Authenticated current-user profile endpoint
 - DTO ↔ Entity mapping with MapStruct
 - Centralized REST exception handling
 - Request validation with Jakarta Validation
@@ -141,6 +142,7 @@ A public registration endpoint creates **STUDENT** accounts. The role supplied b
 | Operation | Student | Teacher |
 |---|:---:|:---:|
 | Register | ✓ | ✓ |
+| View own profile | ✓ | ✓ |
 | View courses | ✓ | ✓ |
 | Create/delete own courses | — | ✓ |
 | View lessons | ✓ | ✓ |
@@ -167,6 +169,14 @@ Content-Type: application/json
   "password": "secret123"
 }
 ```
+
+### Current user
+
+```text
+GET /users/me              # AUTHENTICATED USER
+```
+
+The endpoint returns the authenticated user's public profile without exposing the password.
 
 ### Courses
 
@@ -239,6 +249,7 @@ Example:
 - Enrollment has a database-level unique constraint on `(student_id, course_id)`.
 - Registration emails are normalized to lowercase before persistence and authentication.
 - Client-controlled roles are not accepted during registration.
+- User administration endpoints were intentionally removed until a proper `ADMIN` role is implemented.
 
 ## Roadmap
 
