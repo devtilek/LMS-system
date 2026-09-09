@@ -26,6 +26,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/users/register").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/courses/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/lessons/course/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/courses/**").hasRole("TEACHER")
@@ -33,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/lessons/**").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.DELETE, "/lessons/**").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.POST, "/enrollments").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.GET, "/enrollments/student/**").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.GET, "/enrollments/course/**").hasRole("TEACHER")
                         .anyRequest().authenticated()
                 )
