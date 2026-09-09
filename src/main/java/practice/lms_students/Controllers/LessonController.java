@@ -3,6 +3,7 @@ package practice.lms_students.Controllers;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import practice.lms_students.DTO.LessonDTO;
 import practice.lms_students.Service.LessonService;
@@ -17,8 +18,9 @@ public class LessonController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LessonDTO createLesson(@Valid @RequestBody LessonDTO lessonDTO) {
-        return lessonService.createLesson(lessonDTO);
+    public LessonDTO createLesson(Authentication authentication,
+                                  @Valid @RequestBody LessonDTO lessonDTO) {
+        return lessonService.createLesson(authentication, lessonDTO);
     }
 
     @GetMapping("/course/{courseId}")
@@ -28,7 +30,7 @@ public class LessonController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteById(@PathVariable Long id) {
-        lessonService.deleteLesson(id);
+    public void deleteById(Authentication authentication, @PathVariable Long id) {
+        lessonService.deleteLesson(authentication, id);
     }
 }
