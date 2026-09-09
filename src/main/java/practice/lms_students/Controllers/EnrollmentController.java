@@ -29,7 +29,8 @@ public class EnrollmentController {
     }
 
     @GetMapping("/course/{courseId}")
-    public List<EnrollmentDTO> getByCourse(@PathVariable Long courseId) {
-        return enrollmentService.getByCourse(courseId);
+    public List<EnrollmentDTO> getByCourse(Authentication authentication,
+                                           @PathVariable Long courseId) {
+        return enrollmentService.getByCourse(authentication, courseId);
     }
 }
