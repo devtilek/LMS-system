@@ -1,6 +1,7 @@
 package practice.lms_students.Service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import practice.lms_students.DTO.UserRequestDTO;
@@ -11,8 +12,6 @@ import practice.lms_students.Exception.AlreadyExistsException;
 import practice.lms_students.Exception.ResourceNotFoundException;
 import practice.lms_students.Mapper.UserMapper;
 import practice.lms_students.Repository.UserRepo;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,27 +35,12 @@ public class UserService {
         return userMapper.toDTO(userRepo.save(user));
     }
 
-    public List<UserResponseDTO> getAll() {
-        return userRepo.findAll().stream()
-                .map(userMapper::toDTO)
-                .toList();
-    }
-
-    public UserResponseDTO getById(Long id) {
-        return userMapper.toDTO(findUser(id));
-    }
-
-    public void deleteById(Long id) {
-        userRepo.delete(findUser(id));
+    public UserResponseDTO getCurrentUser(Authentication authentication) {
+        return userMapper.toDTO(getByEmail(authentication.getName()));
     }
 
     public User getByEmail(String email) {
-        return userRepo.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    }
-
-    public User findUser(Long id) {
-        return userRepo.findById(id)
+        return userRepo.findByEmail(email.trim().toLowerCase())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }
