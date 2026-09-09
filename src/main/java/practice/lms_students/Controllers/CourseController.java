@@ -35,7 +35,7 @@ public class CourseController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCourseById(@PathVariable Long id) {
-        courseService.delete(id);
+    public void deleteCourseById(Authentication authentication, @PathVariable Long id) {
+        courseService.delete(authentication, id);
     }
 }
