@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import practice.lms_students.DTO.EnrollmentDTO;
 import practice.lms_students.Entity.Course;
 import practice.lms_students.Entity.Enrollment;
+import practice.lms_students.Entity.Role;
 import practice.lms_students.Entity.User;
 import practice.lms_students.Exception.AlreadyExistsException;
 import practice.lms_students.Exception.ResourceNotFoundException;
@@ -29,6 +30,8 @@ public class EnrollmentService {
     @Transactional
     public EnrollmentDTO enroll(Authentication authentication, Long courseId) {
         User student = getCurrentUser(authentication);
+        requireRole(student, Role.ROLE_STUDENT, "Only students can enroll in courses");
+
         Course course = courseRepo.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
@@ -42,8 +45,11 @@ public class EnrollmentService {
         return enrollmentMapper.toDTO(enrollmentRepo.save(enrollment));
     }
 
+    @Transactional(readOnly = true)
     public List<EnrollmentDTO> getByStudent(Authentication authentication, Long studentId) {
         User currentUser = getCurrentUser(authentication);
+        requireRole(currentUser, Role.ROLE_STUDENT, "Only students can view student enrollments");
+
         if (!currentUser.getId().equals(studentId)) {
             throw new AccessDeniedException("You can only view your own enrollments");
         }
@@ -53,10 +59,18 @@ public class EnrollmentService {
                 .toList();
     }
 
-    public List<EnrollmentDTO> getByCourse(Long courseId) {
-        if (!courseRepo.existsById(courseId)) {
-            throw new ResourceNotFoundException("Course not found");
+    @Transactional(readOnly = true)
+    public List<EnrollmentDTO> getByCourse(Authentication authentication, Long courseId) {
+        User teacher = getCurrentUser(authentication);
+        requireRole(teacher, Role.ROLE_TEACHER, "Only teachers can view course enrollments");
+
+        Course course = courseRepo.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        if (!course.getTeacher().getId().equals(teacher.getId())) {
+            throw new AccessDeniedException("You can only view enrollments for your own courses");
         }
+
         return enrollmentRepo.findByCourseId(courseId).stream()
                 .map(enrollmentMapper::toDTO)
                 .toList();
@@ -65,5 +79,11 @@ public class EnrollmentService {
     private User getCurrentUser(Authentication authentication) {
         return userRepo.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
+    }
+
+    private void requireRole(User user, Role role, String message) {
+        if (user.getRole() != role) {
+            throw new AccessDeniedException(message);
+        }
     }
 }
