@@ -1,6 +1,6 @@
 # LMS System
 
-A backend REST API for managing an online learning platform. The project demonstrates layered architecture, role-based access control, DTO mapping, validation, and PostgreSQL persistence with Spring Boot.
+A backend REST API for managing an online learning platform. The project demonstrates layered architecture, role-based access control, ownership checks, DTO mapping, validation, testing, and PostgreSQL persistence with Spring Boot.
 
 ## Features
 
@@ -8,8 +8,8 @@ A backend REST API for managing an online learning platform. The project demonst
 - Secure registration with BCrypt password hashing
 - HTTP Basic authentication
 - Role-based authorization with Spring Security
-- Course management for teachers
-- Lesson management for teachers
+- Teacher-owned course management
+- Teacher-owned lesson management
 - Student course enrollment
 - Protection against duplicate enrollments
 - DTO ↔ Entity mapping with MapStruct
@@ -17,6 +17,8 @@ A backend REST API for managing an online learning platform. The project demonst
 - Request validation with Jakarta Validation
 - PostgreSQL persistence with Spring Data JPA
 - Environment-based database configuration
+- Ownership checks prevent teachers from modifying another teacher's courses or lessons
+- Unit tests for authorization rules
 
 ## Tech Stack
 
@@ -31,6 +33,7 @@ A backend REST API for managing an online learning platform. The project demonst
 | Lombok | Boilerplate reduction |
 | Gradle | Build tool |
 | Jakarta Validation | Request validation |
+| JUnit 5 / Mockito | Testing |
 
 ## Architecture
 
@@ -39,7 +42,7 @@ Client
   ↓
 Controller
   ↓
-Service
+Service + Business Rules + Ownership Checks
   ↓
 Repository
   ↓
@@ -62,6 +65,11 @@ src/main/java/practice/lms_students/
 ├── Repository/
 ├── Security/
 └── Service/
+
+src/test/java/practice/lms_students/
+└── Service/
+    ├── CourseServiceTest.java
+    └── LessonServiceTest.java
 ```
 
 ## Getting Started
@@ -108,13 +116,25 @@ gradlew.bat bootRun
 
 The API runs on `http://localhost:8080`.
 
+### Test
+
+Linux/macOS:
+
+```bash
+./gradlew test
+```
+
+Windows:
+
+```bash
+gradlew.bat test
+```
+
 ## Authentication and Authorization
 
 The API uses HTTP Basic authentication.
 
-A public registration endpoint creates **STUDENT** accounts. The role supplied by a client during registration is intentionally ignored so that an unauthenticated user cannot create a teacher account.
-
-Teacher accounts should be provisioned separately by an administrator/database seed until a dedicated admin API is introduced.
+A public registration endpoint creates **STUDENT** accounts. The role supplied by a client during registration is not accepted; unauthenticated clients cannot create teacher accounts. Teacher accounts should be provisioned separately until a dedicated admin API is introduced.
 
 ### Permissions
 
@@ -122,12 +142,14 @@ Teacher accounts should be provisioned separately by an administrator/database s
 |---|:---:|:---:|
 | Register | ✓ | ✓ |
 | View courses | ✓ | ✓ |
-| Create/delete courses | — | ✓ |
+| Create/delete own courses | — | ✓ |
 | View lessons | ✓ | ✓ |
-| Create/delete lessons | — | ✓ |
+| Create/delete lessons in own courses | — | ✓ |
 | Enroll in a course | ✓ | — |
 | View own enrollments | ✓ | — |
-| View course enrollments | — | ✓ |
+| View enrollments in own courses | — | ✓ |
+
+Ownership is enforced in the service layer, not only by controller URL permissions.
 
 ## API
 
@@ -152,7 +174,7 @@ Content-Type: application/json
 GET    /courses
 GET    /courses/{id}
 POST   /courses              # TEACHER
-DELETE /courses/{id}         # TEACHER
+DELETE /courses/{id}         # TEACHER + OWNER
 ```
 
 Create course:
@@ -170,8 +192,8 @@ The teacher is taken from the authenticated user rather than from a client-suppl
 
 ```text
 GET    /lessons/course/{courseId}
-POST   /lessons               # TEACHER
-DELETE /lessons/{id}          # TEACHER
+POST   /lessons               # TEACHER + COURSE OWNER
+DELETE /lessons/{id}          # TEACHER + COURSE OWNER
 ```
 
 Create lesson:
@@ -188,24 +210,24 @@ Create lesson:
 
 ```text
 POST /enrollments?courseId=1
-GET  /enrollments/student/{studentId}
-GET  /enrollments/course/{courseId}   # TEACHER
+GET  /enrollments/student/{studentId}   # OWN STUDENT ONLY
+GET  /enrollments/course/{courseId}     # COURSE OWNER ONLY
 ```
 
 The student ID is derived from the authenticated account during enrollment. A student cannot enroll another user, and duplicate student/course combinations are rejected.
 
 ## Error Responses
 
-The API returns consistent JSON errors for common failures such as validation errors, missing resources, and duplicate resources.
+The API returns consistent JSON errors for common failures such as validation errors, missing resources, duplicate resources, and forbidden operations.
 
 Example:
 
 ```json
 {
   "timestamp": "2026-09-08T12:00:00Z",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Course not found"
+  "status": 403,
+  "error": "Forbidden",
+  "message": "You can only delete your own courses"
 }
 ```
 
@@ -215,6 +237,8 @@ Example:
 - Relationships are lazy-loaded where appropriate.
 - Lesson and enrollment filtering is performed by PostgreSQL through repository queries instead of loading every record into memory.
 - Enrollment has a database-level unique constraint on `(student_id, course_id)`.
+- Registration emails are normalized to lowercase before persistence and authentication.
+- Client-controlled roles are not accepted during registration.
 
 ## Roadmap
 
@@ -222,6 +246,6 @@ Example:
 - Admin role and teacher management
 - Pagination and sorting
 - OpenAPI / Swagger documentation
-- Unit and integration tests
+- More unit and integration tests
 - Docker Compose for PostgreSQL and the application
 - CI pipeline with GitHub Actions
