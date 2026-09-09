@@ -1,6 +1,10 @@
 package practice.lms_students.Service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -14,11 +18,11 @@ import practice.lms_students.Mapper.CourseMapper;
 import practice.lms_students.Repository.CourseRepo;
 import practice.lms_students.Repository.UserRepo;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class CourseService {
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final CourseRepo courseRepo;
     private final CourseMapper courseMapper;
     private final UserRepo userRepo;
@@ -36,10 +40,17 @@ public class CourseService {
         return courseMapper.toDTO(courseRepo.save(course));
     }
 
-    public List<CourseDTO> getAllCourses() {
-        return courseRepo.findAll().stream()
-                .map(courseMapper::toDTO)
-                .toList();
+    @Transactional(readOnly = true)
+    public Page<CourseDTO> getAllCourses(int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Page must be greater than or equal to 0");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new IllegalArgumentException("Page size must be between 1 and " + MAX_PAGE_SIZE);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        return courseRepo.findAll(pageable).map(courseMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
