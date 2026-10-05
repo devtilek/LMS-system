@@ -16,8 +16,10 @@ A backend REST API for managing an online learning platform. The project demonst
 - DTO ↔ Entity mapping with MapStruct
 - Centralized REST exception handling
 - Request validation with Jakarta Validation
+- Positive ID and pagination parameter validation at the controller boundary
 - PostgreSQL persistence with Spring Data JPA
 - Environment-based database configuration
+- GitHub Actions CI for Gradle test runs
 - Ownership checks prevent teachers from modifying another teacher's courses or lessons
 - Unit tests for authorization rules
 
@@ -244,6 +246,7 @@ Example:
 ## Development Notes
 
 - `spring.jpa.open-in-view=false` is enabled to avoid accidental database access from the web layer.
+- Controller inputs reject invalid IDs and page sizes before hitting the service layer.
 - Relationships are lazy-loaded where appropriate.
 - Lesson and enrollment filtering is performed by PostgreSQL through repository queries instead of loading every record into memory.
 - Enrollment has a database-level unique constraint on `(student_id, course_id)`.
